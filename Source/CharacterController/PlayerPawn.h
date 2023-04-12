@@ -28,16 +28,43 @@ public:
 
     void JumpInput();
 	void HorizontalInput(float Value);
-	void VerticalInput(float Value);
+	void VerticalInput(float AxisValue);
 
 private:
     UPROPERTY(VisibleAnywhere)
     class UCameraComponent* PlayerCamera;
 
+	// variables  
 	UPROPERTY(EditAnywhere)
 	float MovementSpeed = 400.f;
 
-	FVector CurrentInput;
+	FVector CurrentInput = FVector::Zero();
 
-	bool bJump = false; 
+	bool bJump = false;
+
+	UPROPERTY(EditAnywhere)
+	float SkinWidth = 1.f;
+
+	UPROPERTY(EditAnywhere)
+	float Gravity = 982.f; // not acceleration atm 
+
+	UPROPERTY(EditAnywhere)
+	float GroundCheckDistance = 5.f;
+
+	UPROPERTY(EditAnywhere)
+	float JumpDistance = 200.f;
+
+	FVector Velocity = FVector::Zero(); 
+
+	// functions
+	
+	FVector GetLegalMovement(FVector Movement) const;
+	
+	void MoveSideways(float DeltaTime);
+
+	void ApplyGravity(const float DeltaTime);
+
+	void Jump();
+
+	bool DoLineTrace(FHitResult& HitResultOut, FVector EndLocation) const; 
 };
