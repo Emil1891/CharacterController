@@ -4,6 +4,7 @@
 
 #include "PhysicsHelper.h"
 #include "Camera/CameraComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 APlayerPawn::APlayerPawn()
@@ -12,12 +13,10 @@ APlayerPawn::APlayerPawn()
 	PrimaryActorTick.bCanEverTick = true;
 
 	// PlayerCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("PlayerCamera"));
- //     
 	// PlayerCamera->SetupAttachment(RootComponent);
 	// PlayerCamera->ProjectionMode = ECameraProjectionMode::Orthographic;
 	// PlayerCamera->SetRelativeLocation(FVector(0.0f, 1600.0f, 200.0f));
 	// PlayerCamera->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
- //    
 	// PlayerCamera->OrthoWidth = 8000.f;
 
 }
@@ -34,30 +33,31 @@ void APlayerPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	
-	Velocity = FVector::Zero();
+	ApplyGravity(DeltaTime);
 	
 	MoveSideways(DeltaTime);
-	ApplyGravity(DeltaTime);
+
+	// applies air resistance 
+	Velocity *= FMath::Pow(AirResistance, DeltaTime);
 
 	if(bJump)
 		Jump();
 
-	SetActorLocation(GetActorLocation() + GetLegalMovement(Velocity)); 
+	PreventCollision(); 
+
+	SetActorLocation(GetActorLocation() + Velocity * DeltaTime);
 }
 
-void APlayerPawn::MoveSideways(float DeltaTime)
+void APlayerPawn::MoveSideways(const float DeltaTime)
 {
-	const FVector CurrentLocation = GetActorLocation();
-	const double Distance = MovementSpeed * DeltaTime;
-	const FVector Movement = CurrentInput.GetSafeNormal() * Distance;
-	// SetActorLocation(CurrentLocation + GetLegalMovement(Movement));
+	const double Distance = Acceleration * DeltaTime;
+	const FVector Movement = Input.GetSafeNormal() * Distance;
 	Velocity += Movement; 
 }
 
 void APlayerPawn::ApplyGravity(const float DeltaTime)
 {
 	const FVector MoveDistance = FVector::DownVector * Gravity * DeltaTime;
-	// SetActorLocation(GetActorLocation() + GetLegalMovement(MoveDistance));
 	Velocity += MoveDistance;
 }
 
@@ -67,11 +67,10 @@ void APlayerPawn::Jump()
 	GetActorBounds(true, Origin, Extent);
 
 	FHitResult HitResult;
-	const bool bHit = DoLineTrace(HitResult, Origin + FVector::DownVector * (GroundCheckDistance + SkinWidth));
+	const bool bGrounded = DoLineTrace(HitResult, Origin + FVector::DownVector * (GroundCheckDistance + SkinWidth));
 
-	if(bHit) // now the player just teleports
+	if(bGrounded) // now the player just teleports
 		Velocity += FVector::UpVector * JumpDistance; 
-		// SetActorLocation(GetActorLocation() + FVector::UpVector * JumpDistance);
 
 	bJump = false; 
 }
@@ -105,27 +104,60 @@ void APlayerPawn::JumpInput()
 
 void APlayerPawn::HorizontalInput(float AxisValue)
 {
-	CurrentInput.X = AxisValue;
+	Input.X = AxisValue;
 }
 
 void APlayerPawn::VerticalInput(float AxisValue)
 {
+	// not used as of now 
 	// CurrentInput.Z = AxisValue; 
 }
 
-FVector APlayerPawn::GetLegalMovement(FVector Movement) const
+void APlayerPawn::PreventCollision() 
 {
-	FVector Origin, Extent;
-	GetActorBounds(true, Origin, Extent);
+	constexpr float TooSmallMovement = 0.001f;
+	constexpr int MaxLoops = 10;
+	int Loops = 0; 
+	bool bHit = false;
+	const float DeltaTime = UGameplayStatics::GetWorldDeltaSeconds(this);
 
-	FHitResult HitResult;
-	const bool bHit = DoLineTrace(HitResult, Origin + Movement.GetSafeNormal() * (Movement.Size() + SkinWidth));
-	
-	if(!bHit) // no hit, you can move the full extent of movement
-		return Movement;
-	
-	// if hit, return distance to hit point plus normal 
-	return Movement.GetSafeNormal() * (HitResult.Distance - SkinWidth) + PhysicsHelper::GetNormal(Velocity, HitResult.Normal);
+	// iterative section to prevent collisions occuring after the previous adjustment 
+	while(Loops++ < MaxLoops)
+	{
+		// If movement is too small to notice, velocity is set to zero 
+		if(Velocity.Size() * DeltaTime < TooSmallMovement)
+		{
+			Velocity = FVector::Zero(); 
+			return;
+		}
+
+		FVector Movement = Velocity * DeltaTime; 
+
+		// Line trace 
+		FVector Origin, Extent;
+		GetActorBounds(true, Origin, Extent);
+
+		FHitResult HitResult;
+		bHit = DoLineTrace(HitResult, Origin + Movement.GetSafeNormal() * (Movement.Size() + SkinWidth));
+		// Line trace end
+		
+		if(!bHit) // no collision -> no adjustment necessary 
+			return; 
+		
+		const FVector Normal = PhysicsHelper::GetNormal(Velocity, HitResult.Normal);
+		Velocity += Normal;
+
+		ApplyFriction(Normal.Size()); 
+	}
+}
+
+void APlayerPawn::ApplyFriction(const float NormalMagnitude)
+{
+	// if applied friction is larger than velocity, velocity is set to zero
+	if(Velocity.Size() < NormalMagnitude * StaticFrictionCoefficient)
+		Velocity = FVector::ZeroVector; 
+	else
+		Velocity -= Velocity.GetSafeNormal() * NormalMagnitude * KineticFrictionCoefficient; 
 }
 
 bool APlayerPawn::DoLineTrace(FHitResult& HitResultOut, FVector EndLocation) const

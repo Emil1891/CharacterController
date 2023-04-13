@@ -34,13 +34,16 @@ private:
     UPROPERTY(VisibleAnywhere)
     class UCameraComponent* PlayerCamera;
 
-	// variables  
+	// variables
+	
 	UPROPERTY(EditAnywhere)
-	float MovementSpeed = 400.f;
+	float Acceleration = 400.f;
 
-	FVector CurrentInput = FVector::Zero();
+	UPROPERTY(EditAnywhere)
+	float Deceleration = 400.f;
 
-	bool bJump = false;
+	UPROPERTY(EditAnywhere)
+	float MaxSpeed = 1200.f; 
 
 	UPROPERTY(EditAnywhere)
 	float SkinWidth = 1.f;
@@ -54,17 +57,32 @@ private:
 	UPROPERTY(EditAnywhere)
 	float JumpDistance = 200.f;
 
+	UPROPERTY(EditAnywhere, meta=(ClampMin = 0.f, ClampMax = 1.f, UIMin = 0.f, UIMax = 1.f))
+	float StaticFrictionCoefficient = 0.5f;
+
+	UPROPERTY(EditAnywhere, meta=(ClampMin = 0.f, ClampMax = 1.f, UIMin = 0.f, UIMax = 1.f))
+	float KineticFrictionCoefficient = 0.3f;
+
+	UPROPERTY(EditAnywhere, meta=(ClampMin = 0.f, ClampMax = 1.f, UIMin = 0.f, UIMax = 1.f))
+	float AirResistance = 0.2f; 
+	
+	FVector Input = FVector::Zero();
+
+	bool bJump = false;
+	
 	FVector Velocity = FVector::Zero(); 
 
 	// functions
 	
-	FVector GetLegalMovement(FVector Movement) const;
+	void PreventCollision();
 	
-	void MoveSideways(float DeltaTime);
+	void MoveSideways(const float DeltaTime);
 
 	void ApplyGravity(const float DeltaTime);
 
 	void Jump();
 
-	bool DoLineTrace(FHitResult& HitResultOut, FVector EndLocation) const; 
+	bool DoLineTrace(FHitResult& HitResultOut, FVector EndLocation) const;
+
+	void ApplyFriction(const float NormalMagnitude); 
 };
