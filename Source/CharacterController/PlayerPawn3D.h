@@ -84,5 +84,7 @@ private:
 
 	bool DoLineTrace(FHitResult& HitResultOut, FVector EndLocation) const;
 
-	void ApplyFriction(const float NormalMagnitude); 
+	void ApplyFriction(const float NormalMagnitude);
+
+	void AdjustForOverlap(); 
 };

@@ -43,9 +43,43 @@ void APlayerPawn3D::Tick(float DeltaTime)
 	if(bJump)
 		Jump();
 
-	PreventCollision(); 
-
+	PreventCollision();
+	
 	SetActorLocation(GetActorLocation() + Velocity * DeltaTime);
+
+	AdjustForOverlap(); 
+}
+
+void APlayerPawn3D::AdjustForOverlap()
+{
+	int Loops = 0;
+	constexpr int MaxLoops = 15;
+	// this loop will run until there are no overlaps or until it has reached max loops
+	while(Loops++ < MaxLoops)
+	{
+		FVector Origin, Extent;
+		GetActorBounds(true, Origin, Extent);
+		
+		FCollisionQueryParams QueryParams;
+		QueryParams.AddIgnoredActor(this);
+		TArray<FOverlapResult> Overlapping;
+
+		// Overlaps are rechecked after each time the player is moved 
+		GetWorld()->OverlapMultiByChannel(Overlapping, Origin, FQuat::Identity, ECC_Pawn, FCollisionShape::MakeCapsule(Extent), QueryParams);
+
+		if(Overlapping.IsEmpty()) // no overlaps 
+			return;
+		
+		FMTDResult MTD;
+		const bool OverlapExists = Overlapping[0].GetComponent()->ComputePenetration(MTD, FCollisionShape::MakeCapsule(Extent), Origin, FQuat::Identity);
+
+		if(!OverlapExists)
+			continue;
+
+		// Move player so there is no overlap 
+		SetActorLocation(GetActorLocation() + MTD.Direction * (MTD.Distance + SkinWidth));
+		Velocity += PhysicsHelper::GetNormal(Velocity, -MTD.Direction); 
+	}
 }
 
 void APlayerPawn3D::MoveSideways(const float DeltaTime)
@@ -141,7 +175,7 @@ void APlayerPawn3D::PreventCollision()
 		// Line trace end
 		
 		if(!bHit) // no collision -> no adjustment necessary 
-			return; 
+			return;
 		
 		const FVector Normal = PhysicsHelper::GetNormal(Velocity, HitResult.Normal);
 		Velocity += Normal;
