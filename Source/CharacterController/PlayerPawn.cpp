@@ -3,7 +3,6 @@
 #include "PlayerPawn.h"
 
 #include "PhysicsHelper.h"
-#include "Camera/CameraComponent.h"
 #include "Kismet/GameplayStatics.h"
 
 // Sets default values
@@ -11,14 +10,7 @@ APlayerPawn::APlayerPawn()
 {
  	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-
-	// PlayerCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("PlayerCamera"));
-	// PlayerCamera->SetupAttachment(RootComponent);
-	// PlayerCamera->ProjectionMode = ECameraProjectionMode::Orthographic;
-	// PlayerCamera->SetRelativeLocation(FVector(0.0f, 1600.0f, 200.0f));
-	// PlayerCamera->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
-	// PlayerCamera->OrthoWidth = 8000.f;
-
+	
 }
 
 // Called when the game starts or when spawned
@@ -45,20 +37,20 @@ void APlayerPawn::Tick(float DeltaTime)
 
 	PreventCollision(); 
 
-	SetActorLocation(GetActorLocation() + Velocity * DeltaTime);
+	SetActorLocation(GetActorLocation() + Velocity * DeltaTime); 
 }
 
 void APlayerPawn::MoveSideways(const float DeltaTime)
 {
 	const double Distance = Acceleration * DeltaTime;
-	const FVector Movement = Input.GetSafeNormal() * Distance;
+	const FVector Movement = Input.GetSafeNormal() * Distance; // Input.GetSafeNormal() is the direction 
 	Velocity += Movement; 
 }
 
 void APlayerPawn::ApplyGravity(const float DeltaTime)
 {
-	const FVector MoveDistance = FVector::DownVector * Gravity * DeltaTime;
-	Velocity += MoveDistance;
+	const FVector Movement = FVector::DownVector * Gravity * DeltaTime;
+	Velocity += Movement;
 }
 
 void APlayerPawn::Jump()
@@ -121,7 +113,8 @@ void APlayerPawn::PreventCollision()
 	bool bHit = false;
 	const float DeltaTime = UGameplayStatics::GetWorldDeltaSeconds(this);
 
-	// iterative section to prevent collisions occuring after the previous adjustment 
+	// iterative section to prevent collisions occuring after the previous adjustment
+	// i.e collisions occuring because of the adjusted movement after the first collision 
 	while(Loops++ < MaxLoops)
 	{
 		// If movement is too small to notice, velocity is set to zero 
@@ -147,6 +140,28 @@ void APlayerPawn::PreventCollision()
 		const FVector Normal = PhysicsHelper::GetNormal(Velocity, HitResult.Normal);
 		Velocity += Normal;
 
+		/* TODO: Attempts start */
+		
+		// sets location to where the player would end up at collision, skin width adjusted
+
+		/* First attempt */
+		// FVector HitDirection = HitResult.Location - Origin;
+		// SetActorLocation(HitResult.Location - HitDirection.GetSafeNormal() * SkinWidth);
+
+		/* Second attempt */
+		// SetActorLocation(GetActorLocation() - HitResult.Normal * (HitResult.Distance - SkinWidth));
+
+		/* Third attempt */
+		double DistanceToColliderNeg = SkinWidth / FVector::DotProduct(Movement.GetSafeNormal(),HitResult.Normal);
+		double AllowedMovementDistance = HitResult.Distance + DistanceToColliderNeg;
+		if (AllowedMovementDistance > Movement.Size())
+			return; 
+			// return Movement;
+		if (AllowedMovementDistance > 0.0f)
+			SetActorLocation(GetActorLocation() + Movement.GetSafeNormal() * AllowedMovementDistance);
+
+		/* Attempts over */
+		
 		ApplyFriction(Normal.Size()); 
 	}
 }

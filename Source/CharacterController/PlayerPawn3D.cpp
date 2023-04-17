@@ -114,8 +114,8 @@ void APlayerPawn3D::MoveSideways(const float DeltaTime)
 
 void APlayerPawn3D::ApplyGravity(const float DeltaTime)
 {
-	const FVector MoveDistance = FVector::DownVector * Gravity * DeltaTime;
-	Velocity += MoveDistance;
+	const FVector Movement = FVector::DownVector * Gravity * DeltaTime;
+	Velocity += Movement;
 }
 
 void APlayerPawn3D::Jump()
@@ -211,7 +211,11 @@ void APlayerPawn3D::PreventCollision()
 		
 		const FVector Normal = PhysicsHelper::GetNormal(Velocity, HitResult.Normal);
 		Velocity += Normal;
-
+		
+		// FVector HitDirection = HitResult.Location - Origin;
+		// // sets location to where the player would end up at collision, skin width adjusted 
+		// SetActorLocation(HitResult.Location - HitDirection.GetSafeNormal() * SkinWidth);
+		
 		ApplyFriction(Normal.Size()); 
 	}
 }
@@ -239,6 +243,6 @@ bool APlayerPawn3D::DoLineTrace(FHitResult& HitResultOut, FVector EndLocation) c
 		EndLocation,
 		FQuat::Identity,
 		ECC_Pawn,
-		FCollisionShape::MakeCapsule(Extent),
+		FCollisionShape::MakeCapsule(Extent), // TODO: Check if MakeBox offers better collision detection 
 		QueryParams);
 }
