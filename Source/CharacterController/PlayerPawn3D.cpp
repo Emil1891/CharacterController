@@ -12,12 +12,6 @@ APlayerPawn3D::APlayerPawn3D()
  	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	// PlayerCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("PlayerCamera"));
-	// PlayerCamera->SetupAttachment(RootComponent);
-	// PlayerCamera->ProjectionMode = ECameraProjectionMode::Orthographic;
-	// PlayerCamera->SetRelativeLocation(FVector(0.0f, 1600.0f, 200.0f));
-	// PlayerCamera->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
-	// PlayerCamera->OrthoWidth = 8000.f;
 
 }
 
@@ -25,7 +19,8 @@ APlayerPawn3D::APlayerPawn3D()
 void APlayerPawn3D::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
+	Camera = FindComponentByClass<UCameraComponent>();
 }
 
 // Called every frame
@@ -47,7 +42,9 @@ void APlayerPawn3D::Tick(float DeltaTime)
 	
 	SetActorLocation(GetActorLocation() + Velocity * DeltaTime);
 
-	AdjustForOverlap(); 
+	AdjustForOverlap();
+
+	RotateCamera();
 }
 
 void APlayerPawn3D::AdjustForOverlap()
@@ -82,6 +79,32 @@ void APlayerPawn3D::AdjustForOverlap()
 	}
 }
 
+void APlayerPawn3D::CameraYawInput(float Value)
+{
+	CameraInput.X += Value * MouseSensitivity; 
+}
+
+void APlayerPawn3D::CameraPitchInput(float Value)
+{
+	CameraInput.Y = std::clamp(CameraInput.Y += Value * MouseSensitivity, MinCameraAngle, MaxCameraAngle); 
+}
+
+void APlayerPawn3D::RotateCamera()
+{
+	Camera->SetWorldRotation(FRotator(CameraInput.Y, CameraInput.X, 0));
+	// UE_LOG(LogTemp, Warning, TEXT("%s"), *Camera->GetComponentRotation().ToCompactString())
+
+	// rotate player towards camera horizontally 
+	FRotator PlayerNewRot = GetActorRotation();
+	PlayerNewRot.Yaw = CameraInput.X;
+	SetActorRotation(PlayerNewRot);
+
+	// rotate camera (not player) vertically 
+	FRotator CameraNewRot = Camera->GetComponentRotation();
+	CameraNewRot.Pitch = CameraInput.Y;
+	Camera->SetWorldRotation(CameraNewRot); 
+}
+
 void APlayerPawn3D::MoveSideways(const float DeltaTime)
 {
 	const double Distance = Acceleration * DeltaTime;
@@ -114,21 +137,27 @@ void APlayerPawn3D::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-	InputComponent->BindAction(
+	// jump
+	PlayerInputComponent->BindAction(
 	   "Jump",
 	   IE_Pressed,
 	   this,
 	   &APlayerPawn3D::JumpInput);
 
-	InputComponent->BindAxis(
+	// walk
+	PlayerInputComponent->BindAxis(
 		"Horizontal", 
 		this, 
 		&APlayerPawn3D::HorizontalInput);
-	InputComponent->BindAxis(
+	
+	PlayerInputComponent->BindAxis(
 		"Vertical", 
 		this, 
 		&APlayerPawn3D::VerticalInput);
 
+	// camera 
+	PlayerInputComponent->BindAxis("CameraYaw", this, &APlayerPawn3D::CameraYawInput);
+	PlayerInputComponent->BindAxis("CameraPitch", this, &APlayerPawn3D::CameraPitchInput);
 }
 
 void APlayerPawn3D::JumpInput()
@@ -138,12 +167,15 @@ void APlayerPawn3D::JumpInput()
 
 void APlayerPawn3D::HorizontalInput(float AxisValue)
 {
-	Input.X = AxisValue;
+	Input = FVector::Zero(); 
+	FVector NewInput = AxisValue * Camera->GetRightVector();
+	Input += NewInput; 
 }
 
 void APlayerPawn3D::VerticalInput(float AxisValue)
 {
-	Input.Y = -AxisValue; // negative because it is otherwise inversed  
+	FVector NewInput = AxisValue * Camera->GetForwardVector();
+	Input += NewInput; 
 }
 
 void APlayerPawn3D::PreventCollision() 

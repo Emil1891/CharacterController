@@ -86,5 +86,22 @@ private:
 
 	void ApplyFriction(const float NormalMagnitude);
 
-	void AdjustForOverlap(); 
+	void AdjustForOverlap();
+
+	// camera 
+	void CameraYawInput(float Value);
+	void CameraPitchInput(float Value);
+	void RotateCamera(); 
+
+	UCameraComponent* Camera; 
+	FVector CameraInput = FVector::Zero();
+
+	UPROPERTY(EditAnywhere)
+	float MouseSensitivity = 5.f;
+
+	UPROPERTY(EditAnywhere)
+	double MaxCameraAngle = 70;
+	
+	UPROPERTY(EditAnywhere)
+	double MinCameraAngle = -70;
 };
