@@ -168,7 +168,7 @@ void APlayerPawn3D::ApplyGravity(const float DeltaTime)
 
 void APlayerPawn3D::Jump()
 {
-	if(CheckGrounded().IsValidBlockingHit()) // now the player just teleports
+	if(CheckGrounded().IsValidBlockingHit()) 
 		Velocity += FVector::UpVector * JumpDistance; 
 
 	bJump = false; 
@@ -218,21 +218,46 @@ void APlayerPawn3D::JumpInput()
 	bJump = true; 
 }
 
-void APlayerPawn3D::HorizontalInput(float AxisValue)
+// helper function to get angle between 2 vectors 
+static float GetAngle(const FVector& V1, const FVector& V2)
+{
+	const float Dot = FVector::DotProduct(V1.GetSafeNormal(), V2.GetSafeNormal());
+	UE_LOG(LogTemp, Warning, TEXT("Angle: %f"), FMath::RadiansToDegrees(FMath::Acos(Dot)) - 90)
+	return FMath::RadiansToDegrees(FMath::Acos(Dot)) - 90; 
+}
+
+void APlayerPawn3D::HorizontalInput(const float AxisValue)
 {
 	// resets input 
 	Input = FVector::Zero();
 	
 	FVector NewInput = AxisValue * Camera->GetRightVector();
-	const FVector GroundNormal = CheckGrounded().ImpactNormal; 
+	const FHitResult HitResult = CheckGrounded(); 
+	const FVector GroundNormal = HitResult.ImpactNormal.GetSafeNormal();
+
+	/* TODO: passing NewInput makes the angle dependant on camera rotation
+	 * passing AxisValue * Velocity.RightVector gives accurate angle but makes you immovable sideways
+	 * when rolling down the slope, same for vertical but ForwardVector
+	 */
+	// if traversing a too steep slope, simply return without registering input
+	if(GetAngle(GroundNormal, NewInput) > MaxSlopeAngle)
+		return;
+	
 	NewInput = FVector::VectorPlaneProject(NewInput, GroundNormal);
 	Input += NewInput; 
 }
 
-void APlayerPawn3D::VerticalInput(float AxisValue)
+void APlayerPawn3D::VerticalInput(const float AxisValue)
 {
 	FVector NewInput = AxisValue * Camera->GetForwardVector();
-	const FVector GroundNormal = CheckGrounded().ImpactNormal; 
+	const FHitResult HitResult = CheckGrounded(); 
+	const FVector GroundNormal = HitResult.ImpactNormal.GetSafeNormal();
+
+	// FVector Test = AxisValue * Velocity.ForwardVector; 
+	// if traversing a too steep slope, simply return without registering input 
+	if(GetAngle(GroundNormal, NewInput) > MaxSlopeAngle)
+		return;
+
 	NewInput = FVector::VectorPlaneProject(NewInput, GroundNormal);
 	Input += NewInput; 
 }
@@ -288,7 +313,7 @@ void APlayerPawn3D::ApplyFriction(const float NormalMagnitude)
 		Velocity -= Velocity.GetSafeNormal() * NormalMagnitude * KineticFrictionCoefficient; 
 }
 
-bool APlayerPawn3D::DoLineTrace(FHitResult& HitResultOut, FVector EndLocation) const
+bool APlayerPawn3D::DoLineTrace(FHitResult& HitResultOut, const FVector& EndLocation) const
 {
 	FVector Origin, Extent;
 	GetActorBounds(true, Origin, Extent);

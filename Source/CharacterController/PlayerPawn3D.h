@@ -21,14 +21,14 @@ protected:
 
 public:	
 	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+	virtual void Tick(const float DeltaTime) override;
 
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
     void JumpInput();
-	void HorizontalInput(float Value);
-	void VerticalInput(float AxisValue);
+	void HorizontalInput(const float AxisValue);
+	void VerticalInput(const float AxisValue);
 
 private:
 	// variables
@@ -46,7 +46,7 @@ private:
 	float SkinWidth = 1.f;
 
 	UPROPERTY(EditAnywhere)
-	float Gravity = 982.f; // not acceleration atm 
+	float Gravity = 982.f;  
 
 	UPROPERTY(EditAnywhere)
 	float GroundCheckDistance = 5.f;
@@ -61,7 +61,10 @@ private:
 	float KineticFrictionCoefficient = 0.3f;
 
 	UPROPERTY(EditAnywhere, meta=(ClampMin = 0.f, ClampMax = 1.f, UIMin = 0.f, UIMax = 1.f))
-	float AirResistance = 0.2f; 
+	float AirResistance = 0.2f;
+
+	UPROPERTY(EditAnywhere, meta=(ClampMin = 0.f, ClampMax = 90.f, UIMin = 0.f, UIMax = 90.f))
+	float MaxSlopeAngle = 60.f; 
 	
 	FVector Input = FVector::Zero();
 
@@ -79,7 +82,7 @@ private:
 
 	void Jump();
 
-	bool DoLineTrace(FHitResult& HitResultOut, FVector EndLocation) const;
+	bool DoLineTrace(FHitResult& HitResultOut, const FVector& EndLocation) const;
 
 	void ApplyFriction(const float NormalMagnitude);
 
@@ -92,8 +95,8 @@ private:
     UPROPERTY(VisibleAnywhere, Category = "Player Camera")
     class UCameraComponent* PlayerCamera;
 	
-	void CameraYawInput(float Value);
-	void CameraPitchInput(float Value);
+	void CameraYawInput(const float Value);
+	void CameraPitchInput(const float Value);
 	void RotateCamera();
 	void MoveCameraFromCollision(USceneComponent* CameraParent) const; 
 
