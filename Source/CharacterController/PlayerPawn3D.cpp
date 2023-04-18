@@ -2,17 +2,17 @@
 
 #include "PlayerPawn3D.h"
 
+#include "FrameTypes.h"
 #include "PhysicsHelper.h"
 #include "Camera/CameraComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetMathLibrary.h"
 
 // Sets default values
 APlayerPawn3D::APlayerPawn3D()
 {
  	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-
-
 }
 
 // Called when the game starts or when spawned
@@ -21,10 +21,11 @@ void APlayerPawn3D::BeginPlay()
 	Super::BeginPlay();
 
 	Camera = FindComponentByClass<UCameraComponent>();
+	StartCameraDistanceFromPlayer = Camera->GetRelativeLocation().X; 
 }
 
 // Called every frame
-void APlayerPawn3D::Tick(float DeltaTime)
+void APlayerPawn3D::Tick(const float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	
@@ -79,30 +80,77 @@ void APlayerPawn3D::AdjustForOverlap()
 	}
 }
 
-void APlayerPawn3D::CameraYawInput(float Value)
+void APlayerPawn3D::CameraYawInput(const float Value)
 {
 	CameraInput.X += Value * MouseSensitivity; 
 }
 
-void APlayerPawn3D::CameraPitchInput(float Value)
+void APlayerPawn3D::CameraPitchInput(const float Value)
 {
-	CameraInput.Y = std::clamp(CameraInput.Y += Value * MouseSensitivity, MinCameraAngle, MaxCameraAngle); 
+	if(FirstPersonCamera) 
+		CameraInput.Y = std::clamp(CameraInput.Y += Value * MouseSensitivity, MinCameraAngle, MaxCameraAngle);
+	else // Third person camera is inversed in a sense, pulling up makes the camera look down instead of up 
+		CameraInput.Y = std::clamp(CameraInput.Y += Value * MouseSensitivity, -MaxCameraAngle, -MinCameraAngle);
 }
 
 void APlayerPawn3D::RotateCamera()
 {
-	Camera->SetWorldRotation(FRotator(CameraInput.Y, CameraInput.X, 0));
-	// UE_LOG(LogTemp, Warning, TEXT("%s"), *Camera->GetComponentRotation().ToCompactString())
+	if(FirstPersonCamera)
+	{
+		// rotate player towards camera horizontally 
+		FRotator PlayerNewRot = GetActorRotation();
+		PlayerNewRot.Yaw = CameraInput.X;
+		SetActorRotation(PlayerNewRot);
 
-	// rotate player towards camera horizontally 
-	FRotator PlayerNewRot = GetActorRotation();
-	PlayerNewRot.Yaw = CameraInput.X;
-	SetActorRotation(PlayerNewRot);
+		// rotate camera (not player) vertically 
+		FRotator CameraNewRot = Camera->GetComponentRotation();
+		CameraNewRot.Pitch = CameraInput.Y;
+		Camera->SetWorldRotation(CameraNewRot);
+	} else // third person camera 
+	{
+		USceneComponent* CameraParent = Camera->GetAttachParent();
 
-	// rotate camera (not player) vertically 
-	FRotator CameraNewRot = Camera->GetComponentRotation();
-	CameraNewRot.Pitch = CameraInput.Y;
-	Camera->SetWorldRotation(CameraNewRot); 
+		// sets camera's parent's rotation which is located at the player
+		// which makes the camera rotate correctly around the player 
+		FRotator CameraNewRot = CameraParent->GetRelativeRotation();
+		CameraNewRot.Pitch = CameraInput.Y;
+		CameraNewRot.Yaw = CameraInput.X; 
+		CameraParent->SetRelativeRotation(CameraNewRot);
+		
+		// check if the rotation placed the camera behind obstacles
+		MoveCameraFromCollision(CameraParent); 
+	}
+}
+
+void APlayerPawn3D::MoveCameraFromCollision(USceneComponent* CameraParent) const
+{
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+
+	// line trace towards camera from the player/camera's parent 
+	FHitResult HitResult; 
+	const bool bHit = GetWorld()->SweepSingleByChannel(
+		HitResult,
+		CameraParent->GetComponentLocation(),
+		Camera->GetComponentLocation(),
+		FQuat::Identity,
+		ECC_Pawn,
+		FCollisionShape::MakeSphere(CameraLineTraceRadius), 
+		QueryParams);
+
+	if(!bHit)
+	{
+		// if not hit, interpolate camera back to original distance 
+		const double CurrentX = Camera->GetRelativeLocation().X; 
+		const double NewX = UKismetMathLibrary::Lerp(CurrentX, StartCameraDistanceFromPlayer, CameraMoveBackSpeed); 
+		Camera->SetRelativeLocation(FVector(NewX, 0, 0));
+		return;
+	}
+
+	// gets the local position of the impact point, in reference to the camera's parent 
+	FVector NewCameraPos = CameraParent->GetComponentTransform().InverseTransformPosition(HitResult.ImpactPoint); 
+		
+	Camera->SetRelativeLocation(FVector(NewCameraPos.X, 0, 0));
 }
 
 void APlayerPawn3D::MoveSideways(const float DeltaTime)
@@ -120,16 +168,21 @@ void APlayerPawn3D::ApplyGravity(const float DeltaTime)
 
 void APlayerPawn3D::Jump()
 {
+	if(CheckGrounded().IsValidBlockingHit()) // now the player just teleports
+		Velocity += FVector::UpVector * JumpDistance; 
+
+	bJump = false; 
+}
+
+FHitResult APlayerPawn3D::CheckGrounded() const
+{
 	FVector Origin, Extent;
 	GetActorBounds(true, Origin, Extent);
 
 	FHitResult HitResult;
-	const bool bGrounded = DoLineTrace(HitResult, Origin + FVector::DownVector * (GroundCheckDistance + SkinWidth));
+	DoLineTrace(HitResult, Origin + FVector::DownVector * (GroundCheckDistance + SkinWidth));
 
-	if(bGrounded) // now the player just teleports
-		Velocity += FVector::UpVector * JumpDistance; 
-
-	bJump = false; 
+	return HitResult; 
 }
 
 // Called to bind functionality to input
@@ -167,14 +220,20 @@ void APlayerPawn3D::JumpInput()
 
 void APlayerPawn3D::HorizontalInput(float AxisValue)
 {
-	Input = FVector::Zero(); 
+	// resets input 
+	Input = FVector::Zero();
+	
 	FVector NewInput = AxisValue * Camera->GetRightVector();
+	const FVector GroundNormal = CheckGrounded().ImpactNormal; 
+	NewInput = FVector::VectorPlaneProject(NewInput, GroundNormal);
 	Input += NewInput; 
 }
 
 void APlayerPawn3D::VerticalInput(float AxisValue)
 {
 	FVector NewInput = AxisValue * Camera->GetForwardVector();
+	const FVector GroundNormal = CheckGrounded().ImpactNormal; 
+	NewInput = FVector::VectorPlaneProject(NewInput, GroundNormal);
 	Input += NewInput; 
 }
 
@@ -243,6 +302,6 @@ bool APlayerPawn3D::DoLineTrace(FHitResult& HitResultOut, FVector EndLocation) c
 		EndLocation,
 		FQuat::Identity,
 		ECC_Pawn,
-		FCollisionShape::MakeCapsule(Extent), // TODO: Check if MakeBox offers better collision detection 
+		FCollisionShape::MakeBox(Extent), 
 		QueryParams);
 }

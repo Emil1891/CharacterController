@@ -31,9 +31,6 @@ public:
 	void VerticalInput(float AxisValue);
 
 private:
-    UPROPERTY(VisibleAnywhere)
-    class UCameraComponent* PlayerCamera;
-
 	// variables
 	
 	UPROPERTY(EditAnywhere)
@@ -88,20 +85,40 @@ private:
 
 	void AdjustForOverlap();
 
-	// camera 
+	FHitResult CheckGrounded() const; 
+
+#pragma region Camera
+	
+    UPROPERTY(VisibleAnywhere, Category = "Player Camera")
+    class UCameraComponent* PlayerCamera;
+	
 	void CameraYawInput(float Value);
 	void CameraPitchInput(float Value);
-	void RotateCamera(); 
+	void RotateCamera();
+	void MoveCameraFromCollision(USceneComponent* CameraParent) const; 
 
 	UCameraComponent* Camera; 
 	FVector CameraInput = FVector::Zero();
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Player Camera")
 	float MouseSensitivity = 5.f;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Player Camera")
 	double MaxCameraAngle = 70;
 	
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Player Camera")
 	double MinCameraAngle = -70;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Player Camera")
+	bool FirstPersonCamera = true;
+
+	UPROPERTY(EditAnywhere, Category = "Player Camera")
+	float CameraLineTraceRadius = 5.f; 
+	
+	float StartCameraDistanceFromPlayer;
+
+	UPROPERTY(EditAnywhere, Category="Player Camera", meta=(ClampMin = 0.f, ClampMax = 1.f, UIMin = 0.f, UIMax = 1.f))
+	double CameraMoveBackSpeed = 0.3f; 
+
+#pragma endregion 
 };
