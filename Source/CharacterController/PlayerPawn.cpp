@@ -61,7 +61,7 @@ void APlayerPawn::Jump()
 	FHitResult HitResult;
 	const bool bGrounded = DoLineTrace(HitResult, Origin + FVector::DownVector * (GroundCheckDistance + SkinWidth));
 
-	if(bGrounded) // now the player just teleports
+	if(bGrounded) 
 		Velocity += FVector::UpVector * JumpDistance; 
 
 	bJump = false; 
@@ -148,17 +148,17 @@ void APlayerPawn::PreventCollision()
 		// FVector HitDirection = HitResult.Location - Origin;
 		// SetActorLocation(HitResult.Location - HitDirection.GetSafeNormal() * SkinWidth);
 
-		/* Second attempt */
-		// SetActorLocation(GetActorLocation() - HitResult.Normal * (HitResult.Distance - SkinWidth));
+		/* Second attempt - Best attempt */
+		SetActorLocation(GetActorLocation() - HitResult.Normal * (HitResult.Distance - SkinWidth));
 
 		/* Third attempt */
-		double DistanceToColliderNeg = SkinWidth / FVector::DotProduct(Movement.GetSafeNormal(),HitResult.Normal);
-		double AllowedMovementDistance = HitResult.Distance + DistanceToColliderNeg;
-		if (AllowedMovementDistance > Movement.Size())
-			return; 
-			// return Movement;
-		if (AllowedMovementDistance > 0.0f)
-			SetActorLocation(GetActorLocation() + Movement.GetSafeNormal() * AllowedMovementDistance);
+		// double DistanceToColliderNeg = SkinWidth / FVector::DotProduct(Movement.GetSafeNormal(),HitResult.Normal);
+		// double AllowedMovementDistance = HitResult.Distance + DistanceToColliderNeg;
+		// if (AllowedMovementDistance > Movement.Size())
+		// 	return; 
+		// 	// return Movement;
+		// if (AllowedMovementDistance > 0.0f)
+		// 	SetActorLocation(GetActorLocation() + Movement.GetSafeNormal() * AllowedMovementDistance);
 
 		/* Attempts over */
 		
