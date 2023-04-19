@@ -226,6 +226,7 @@ static float GetAngle(const FVector& V1, const FVector& V2)
 	return FMath::RadiansToDegrees(FMath::Acos(Dot)) - 90; 
 }
 
+// TODO: angle thing does not working when walking diagonally 
 void APlayerPawn3D::HorizontalInput(const float AxisValue)
 {
 	// resets input 
@@ -235,14 +236,13 @@ void APlayerPawn3D::HorizontalInput(const float AxisValue)
 	const FHitResult HitResult = CheckGrounded(); 
 	const FVector GroundNormal = HitResult.ImpactNormal.GetSafeNormal();
 
-	/* TODO: passing NewInput makes the angle dependant on camera rotation
-	 * passing AxisValue * Velocity.RightVector gives accurate angle but makes you immovable sideways
-	 * when rolling down the slope, same for vertical but ForwardVector
-	 */
-	// if traversing a too steep slope, simply return without registering input
-	if(GetAngle(GroundNormal, NewInput) > MaxSlopeAngle)
-		return;
+	// gets a vector that is parallel with the horizontal axis, regardless of camera transform 
+	const FVector DirectionTowardsSlope = FVector::VectorPlaneProject(NewInput, FVector::UpVector);
 	
+	// if traversing a too steep slope, simply return without registering input
+	if(GetAngle(GroundNormal, DirectionTowardsSlope) > MaxSlopeAngle)
+		return;
+
 	NewInput = FVector::VectorPlaneProject(NewInput, GroundNormal);
 	Input += NewInput; 
 }
@@ -253,9 +253,11 @@ void APlayerPawn3D::VerticalInput(const float AxisValue)
 	const FHitResult HitResult = CheckGrounded(); 
 	const FVector GroundNormal = HitResult.ImpactNormal.GetSafeNormal();
 
-	// FVector Test = AxisValue * Velocity.ForwardVector; 
-	// if traversing a too steep slope, simply return without registering input 
-	if(GetAngle(GroundNormal, NewInput) > MaxSlopeAngle)
+	// gets a vector that is parallel with the horizontal axis, regardless of camera transform 
+	const FVector DirectionTowardsSlope = FVector::VectorPlaneProject(NewInput, FVector::UpVector);
+	
+	// if traversing a too steep slope, simply return without registering input
+	if(GetAngle(GroundNormal, DirectionTowardsSlope) > MaxSlopeAngle)
 		return;
 
 	NewInput = FVector::VectorPlaneProject(NewInput, GroundNormal);
