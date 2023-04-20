@@ -63,9 +63,9 @@ void APlayerPawn3D::AdjustForOverlap()
 		TArray<FOverlapResult> Overlapping;
 
 		// Overlaps are rechecked after each time the player is moved 
-		GetWorld()->OverlapMultiByChannel(Overlapping, Origin, FQuat::Identity, ECC_Pawn, FCollisionShape::MakeCapsule(Extent), QueryParams);
+		const bool HasOverlap = GetWorld()->OverlapMultiByChannel(Overlapping, Origin, FQuat::Identity, ECC_Pawn, FCollisionShape::MakeCapsule(Extent), QueryParams);
 
-		if(Overlapping.IsEmpty()) // no overlaps 
+		if(!HasOverlap) // no overlaps 
 			return;
 		
 		FMTDResult MTD;
