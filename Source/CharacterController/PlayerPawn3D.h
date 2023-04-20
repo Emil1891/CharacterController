@@ -43,7 +43,7 @@ private:
 	float MaxSpeed = 1200.f; 
 
 	UPROPERTY(EditAnywhere)
-	float SkinWidth = 1.f;
+	float SkinWidth = 1.f; 
 
 	UPROPERTY(EditAnywhere)
 	float Gravity = 982.f;  

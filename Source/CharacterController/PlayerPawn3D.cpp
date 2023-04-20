@@ -34,7 +34,7 @@ void APlayerPawn3D::Tick(const float DeltaTime)
 	MoveSideways(DeltaTime);
 
 	// applies air resistance 
-	Velocity *= FMath::Pow(AirResistance, DeltaTime);
+	Velocity *= FMath::Pow(AirResistance, DeltaTime); 
 
 	if(bJump)
 		Jump();
@@ -156,7 +156,7 @@ void APlayerPawn3D::MoveCameraFromCollision(USceneComponent* CameraParent) const
 void APlayerPawn3D::MoveSideways(const float DeltaTime)
 {
 	const double Distance = Acceleration * DeltaTime;
-	const FVector Movement = Input.GetSafeNormal() * Distance;
+	const FVector Movement = Input.GetSafeNormal() * Distance; // Input.GetSafeNormal() is the movement direction 
 	Velocity += Movement; 
 }
 
@@ -168,7 +168,7 @@ void APlayerPawn3D::ApplyGravity(const float DeltaTime)
 
 void APlayerPawn3D::Jump()
 {
-	if(CheckGrounded().IsValidBlockingHit()) 
+	if(CheckGrounded().IsValidBlockingHit()) // if ground check hits ground 
 		Velocity += FVector::UpVector * JumpDistance; 
 
 	bJump = false; 
@@ -211,6 +211,7 @@ void APlayerPawn3D::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 	// camera 
 	PlayerInputComponent->BindAxis("CameraYaw", this, &APlayerPawn3D::CameraYawInput);
 	PlayerInputComponent->BindAxis("CameraPitch", this, &APlayerPawn3D::CameraPitchInput);
+
 }
 
 void APlayerPawn3D::JumpInput()
@@ -226,7 +227,7 @@ static float GetAngle(const FVector& V1, const FVector& V2)
 	return FMath::RadiansToDegrees(FMath::Acos(Dot)) - 90; 
 }
 
-// TODO: angle thing does not working when walking diagonally 
+// TODO: angle thing does not work when walking diagonally 
 void APlayerPawn3D::HorizontalInput(const float AxisValue)
 {
 	// resets input 
