@@ -26,8 +26,9 @@ void UPlayerCamera::TickComponent(float DeltaTime, ELevelTick TickType, FActorCo
 	RotateCamera();
 }
 
-void UPlayerCamera::SetUpCamera(UInputComponent* Input)
+void UPlayerCamera::SetUpCamera(UInputComponent* Input, AActor* PlayerToView)
 {
+	Player = PlayerToView; 
 	Camera = Player->FindComponentByClass<UCameraComponent>();
 	StartCameraDistanceFromPlayer = Camera->GetRelativeLocation().X;
 	

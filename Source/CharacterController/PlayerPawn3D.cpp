@@ -24,10 +24,9 @@ void APlayerPawn3D::BeginPlay()
 
 	CameraComp = FindComponentByClass<UPlayerCamera>();
 	
-	CameraComp->SetPlayer(this);
 	// set up is called here instead of in SetUpPlayerInput because of the call order:
 	// SetUpInput is called before begin play making the Camera uninitialized 
-	CameraComp->SetUpCamera(InputComponent);
+	CameraComp->SetUpCamera(InputComponent, this);
 }
 
 // Called every frame
@@ -161,6 +160,7 @@ void APlayerPawn3D::HorizontalInput(const float AxisValue)
 	// resets input 
 	Input = FVector::Zero();
 
+	// early return if no input so to prevent unnecessary calculations below 
 	if(AxisValue == 0)
 		return; 
 	
@@ -181,6 +181,7 @@ void APlayerPawn3D::HorizontalInput(const float AxisValue)
 
 void APlayerPawn3D::VerticalInput(const float AxisValue)
 {
+	// early return if no input so to prevent unnecessary calculations below 
 	if(AxisValue == 0)
 		return; 
 	
@@ -263,6 +264,6 @@ bool APlayerPawn3D::DoLineTrace(FHitResult& HitResultOut, const FVector& EndLoca
 		EndLocation,
 		FQuat::Identity,
 		ECC_Pawn,
-		FCollisionShape::MakeBox(Extent), 
+		FCollisionShape::MakeCapsule(Extent), 
 		QueryParams);
 }

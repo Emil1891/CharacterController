@@ -24,11 +24,9 @@ public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	void SetUpCamera(UInputComponent* Input); 
+	void SetUpCamera(UInputComponent* Input, AActor* PlayerToView); 
 
 	UCameraComponent* GetCamera() const { return Camera; }
-
-	void SetPlayer(AActor* PlayerToView) { Player = PlayerToView; }
 	
 	void CameraYawInput(const float Value);
 	void CameraPitchInput(const float Value);
