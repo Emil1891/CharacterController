@@ -26,7 +26,7 @@ void APlayerPawn3D::BeginPlay()
 	
 	// set up is called here instead of in SetUpPlayerInput because of the call order:
 	// SetUpInput is called before begin play making the Camera uninitialized 
-	CameraComp->SetUpCamera(InputComponent, this);
+	CameraComp->SetUpCamera(InputComp, this);
 }
 
 // Called every frame
@@ -120,7 +120,7 @@ void APlayerPawn3D::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-	InputComponent = PlayerInputComponent; 
+	InputComp = PlayerInputComponent; 
 
 	// jump
 	PlayerInputComponent->BindAction(

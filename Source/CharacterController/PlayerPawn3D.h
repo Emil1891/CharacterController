@@ -31,11 +31,12 @@ public:
 	void VerticalInput(const float AxisValue);
 
 private:
-	
 	// variables
-	
-	UInputComponent* InputComponent; 
 
+	UPROPERTY()
+	UInputComponent* InputComp; 
+
+	UPROPERTY()
 	class UPlayerCamera* CameraComp;
 	
 	UPROPERTY(EditAnywhere)
@@ -93,6 +94,5 @@ private:
 
 	void AdjustForOverlap();
 
-	FHitResult CheckGrounded() const; 
-	
+	FHitResult CheckGrounded() const;
 };
