@@ -24,7 +24,7 @@ public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	void SetUpCamera(UInputComponent* Input, AActor* PlayerToView); 
+	void SetUpCamera(); 
 
 	UCameraComponent* GetCamera() const { return Camera; }
 	
@@ -57,7 +57,7 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Player Camera")
 	float CameraLineTraceRadius = 5.f; 
 	
-	float StartCameraDistanceFromPlayer;
+	float StartCameraDistanceFromPlayer = -1;
 
 	UPROPERTY(EditAnywhere, Category="Player Camera", meta=(ClampMin = 0.f, ClampMax = 1.f, UIMin = 0.f, UIMax = 1.f))
 	double CameraMoveBackSpeed = 0.3f; 

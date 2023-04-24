@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "PlayerPawnState.h"
 #include "Components/ActorComponent.h"
 #include "PlayerBaseStateComp.generated.h"
 
@@ -13,36 +14,29 @@
 class APlayerPawn3D; 
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class CHARACTERCONTROLLER_API UPlayerBaseStateComp : public UActorComponent
+class CHARACTERCONTROLLER_API UPlayerBaseStateComp : public UActorComponent, public PlayerPawnState
 {
 	GENERATED_BODY()
 
 public:
-	UPlayerBaseStateComp();
+	UPlayerBaseStateComp() = default;
 
-	virtual void Enter(APlayerPawn3D* PlayerPtr = nullptr);
-	virtual void SetUpInput(UInputComponent* PlayerInputComponent); 
-	virtual void Update(const float DeltaTime);
-	virtual void Exit() {};
+	virtual void Enter(APlayerPawn3D* PlayerPtr = nullptr) override;
+	virtual void SetUpInput(UInputComponent* PlayerInputComponent) override; 
+	virtual void Update(const float DeltaTime) override;
+	virtual void Exit() override {};
 	
 	void HorizontalInput(const float AxisValue);
 	void VerticalInput(const float AxisValue);
 
-	virtual ~UPlayerBaseStateComp();
+	~UPlayerBaseStateComp() = default;
 
-protected:
+private:	
 	// variables
-	
-	APlayerPawn3D* Player;
-	
-	UPROPERTY()
-	UInputComponent* InputComp;
-
 	bool bIsGrounded = false;
 	
 	FVector Velocity = FVector::Zero(); 
 
-private:
 	UPROPERTY()
 	class UPlayerCamera* CameraComp;
 	
@@ -72,8 +66,9 @@ private:
 	
 	FVector Input = FVector::Zero();
 
+	bool bHasSetUpInput = false;
+
 	// functions
-	
 	void PreventCollision();
 	
 	void MoveSideways(const float DeltaTime);
@@ -84,5 +79,9 @@ private:
 
 	void AdjustForOverlap();
 
-	FHitResult CheckGrounded() const;
+	FHitResult CheckGrounded();
+
+	// friends 
+	friend class UPlayerGroundedState;
+	friend class UPlayerAirborneState;
 };

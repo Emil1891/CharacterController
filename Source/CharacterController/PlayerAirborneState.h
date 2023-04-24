@@ -3,17 +3,23 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "PlayerBaseStateComp.h"
+#include "PlayerPawnState.h"
+#include "Components/ActorComponent.h"
 #include "PlayerAirborneState.generated.h"
 
 /**
  * 
  */
-UCLASS()
-class CHARACTERCONTROLLER_API UPlayerAirborneState : public UPlayerBaseStateComp
+UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+class CHARACTERCONTROLLER_API UPlayerAirborneState : public UActorComponent, public PlayerPawnState
 {
 	GENERATED_BODY()
 
+public:
 	virtual void Enter(APlayerPawn3D* PlayerPtr) override;
 	virtual void Update(const float DeltaTime) override;
+
+private:
+	UPROPERTY()
+	class UPlayerBaseStateComp* BaseState;
 };

@@ -3,14 +3,16 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "PlayerBaseStateComp.h"
+#include "PlayerPawnState.h"
+#include "Components/ActorComponent.h"
 #include "PlayerGroundedState.generated.h"
 
 /**
  * 
  */
-UCLASS()
-class CHARACTERCONTROLLER_API UPlayerGroundedState : public UPlayerBaseStateComp
+
+UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+class CHARACTERCONTROLLER_API UPlayerGroundedState : public UActorComponent, public PlayerPawnState
 {
 	GENERATED_BODY()
 	
@@ -20,7 +22,7 @@ public:
 	
 	void JumpInput();
 	
-	void ApplyFriction(const float NormalMagnitude);
+	void ApplyFriction(const float NormalMagnitude) const;
 	
 private:
 	UPROPERTY(EditAnywhere)
@@ -33,6 +35,8 @@ private:
 	float KineticFrictionCoefficient = 0.3f;
 
 	bool bJump = false;
+
+	class UPlayerBaseStateComp* BaseState;
 
 	void Jump();
 };

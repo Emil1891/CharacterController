@@ -1,7 +1,10 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "PlayerCamera.h"
+
+#include "PlayerPawn3D.h"
 #include "Camera/CameraComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 
 // Sets default values for this component's properties
@@ -22,15 +25,17 @@ void UPlayerCamera::BeginPlay()
 void UPlayerCamera::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
+	
 	RotateCamera();
 }
 
-void UPlayerCamera::SetUpCamera(UInputComponent* Input, AActor* PlayerToView)
+void UPlayerCamera::SetUpCamera()
 {
-	Player = PlayerToView; 
+	Player = Cast<APlayerPawn3D>(UGameplayStatics::GetPlayerPawn(this, 0));
 	Camera = Player->FindComponentByClass<UCameraComponent>();
-	StartCameraDistanceFromPlayer = Camera->GetRelativeLocation().X;
+	
+	if(StartCameraDistanceFromPlayer == -1)
+		StartCameraDistanceFromPlayer = Camera->GetRelativeLocation().X;
 	
 	if(FirstPersonCamera)
 	{
@@ -39,8 +44,8 @@ void UPlayerCamera::SetUpCamera(UInputComponent* Input, AActor* PlayerToView)
 		Camera->SetRelativeLocation(CameraPos);
 	}
 	
-	Input->BindAxis("CameraYaw", this, &UPlayerCamera::CameraYawInput);
-	Input->BindAxis("CameraPitch", this, &UPlayerCamera::CameraPitchInput);
+	Player->InputComponent->BindAxis("CameraYaw", this, &UPlayerCamera::CameraYawInput);
+	Player->InputComponent->BindAxis("CameraPitch", this, &UPlayerCamera::CameraPitchInput);
 }
 
 void UPlayerCamera::CameraYawInput(const float Value)

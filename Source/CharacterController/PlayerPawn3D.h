@@ -6,7 +6,7 @@
 #include "GameFramework/Pawn.h"
 #include "PlayerPawn3D.generated.h"
 
-class UPlayerBaseStateComp; 
+class PlayerPawnState;
 
 UCLASS()
 class CHARACTERCONTROLLER_API APlayerPawn3D : public APawn
@@ -28,13 +28,12 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	
-	void SwitchState(UPlayerBaseStateComp* NewState); 
+	void SwitchState(PlayerPawnState* NewState); 
 
-	UPROPERTY()
-	UPlayerBaseStateComp* CurrentState; 
+	PlayerPawnState* CurrentState; 
 	
 	UPROPERTY(EditAnywhere)
-	UPlayerBaseStateComp* BaseState;
+	class UPlayerBaseStateComp* BaseState;
 
 	UPROPERTY(EditAnywhere)
 	class UPlayerGroundedState* GroundedState;

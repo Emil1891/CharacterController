@@ -6,6 +6,7 @@
 #include "PlayerBaseStateComp.h"
 #include "PlayerGroundedState.h"
 #include "Kismet/GameplayStatics.h"
+#include "PlayerPawnState.h"
 
 // Sets default values
 APlayerPawn3D::APlayerPawn3D()
@@ -13,18 +14,17 @@ APlayerPawn3D::APlayerPawn3D()
  	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	// const FStaticConstructObjectParameters Params = FStaticConstructObjectParameters(UPlayerBaseState::StaticClass()); 
 	BaseState = CreateDefaultSubobject<UPlayerBaseStateComp>("Base State");
 	GroundedState = CreateDefaultSubobject<UPlayerGroundedState>("Grounded State");
 	AirborneState = CreateDefaultSubobject<UPlayerAirborneState>("Airborne State");
+
+	CurrentState = GroundedState; 
 }
 
 // Called when the game starts or when spawned
 void APlayerPawn3D::BeginPlay()
 {
 	Super::BeginPlay();
-
-	CurrentState = AirborneState; 
 	
 	CurrentState->Enter(this);
 }
@@ -45,9 +45,9 @@ void APlayerPawn3D::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 	CurrentState->SetUpInput(PlayerInputComponent);
 }
 
-void APlayerPawn3D::SwitchState(UPlayerBaseStateComp* NewState)
+void APlayerPawn3D::SwitchState(PlayerPawnState* NewState)
 {
 	CurrentState->Exit();
 	CurrentState = NewState;
-	CurrentState->Enter();
+	CurrentState->Enter(this);
 }

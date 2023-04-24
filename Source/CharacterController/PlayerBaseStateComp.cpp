@@ -9,26 +9,24 @@
 #include "Camera/CameraComponent.h"
 #include "Kismet/GameplayStatics.h"
 
-UPlayerBaseStateComp::UPlayerBaseStateComp()
-{
-}
-
 void UPlayerBaseStateComp::Enter(APlayerPawn3D* PlayerPtr)
 {
-	if(PlayerPtr)
-		Player = PlayerPtr;
-	
+	PlayerPawnState::Enter(PlayerPtr);
+
+	Player = Cast<APlayerPawn3D>(UGameplayStatics::GetPlayerPawn(this, 0));
 	CameraComp = Player->FindComponentByClass<UPlayerCamera>();
-	
-	// set up is called here instead of in SetUpPlayerInput because of the call order:
-	// SetUpInput is called before begin play making the Camera uninitialized 
-	CameraComp->SetUpCamera(InputComp, Player);
+
+	if(!bHasSetUpInput) 
+		CameraComp->SetUpCamera();
 }
 
 void UPlayerBaseStateComp::SetUpInput(UInputComponent* PlayerInputComponent)
 {
-	InputComp = PlayerInputComponent;
-
+	if(bHasSetUpInput)
+		return;
+	
+	PlayerPawnState::SetUpInput(PlayerInputComponent);
+	
 	// walk
 	PlayerInputComponent->BindAxis(
 		"Horizontal", 
@@ -39,10 +37,13 @@ void UPlayerBaseStateComp::SetUpInput(UInputComponent* PlayerInputComponent)
 		"Vertical", 
 		this, 
 		&UPlayerBaseStateComp::VerticalInput);
+
+	bHasSetUpInput = true;
 }
 
 void UPlayerBaseStateComp::Update(const float DeltaTime)
 {
+	CheckGrounded();
 	ApplyGravity(DeltaTime);
 	
 	MoveSideways(DeltaTime);
@@ -51,7 +52,8 @@ void UPlayerBaseStateComp::Update(const float DeltaTime)
 	Velocity *= FMath::Pow(AirResistance, DeltaTime); 
 
 	PreventCollision();
-	
+
+	Player = Cast<APlayerPawn3D>(UGameplayStatics::GetPlayerPawn(this, 0));
 	Player->SetActorLocation(Player->GetActorLocation() + Velocity * DeltaTime);
 
 	AdjustForOverlap();
@@ -102,7 +104,7 @@ void UPlayerBaseStateComp::ApplyGravity(const float DeltaTime)
 	Velocity += Movement;
 }
 
-FHitResult UPlayerBaseStateComp::CheckGrounded() const
+FHitResult UPlayerBaseStateComp::CheckGrounded() 
 {
 	FVector Origin, Extent;
 	Player->GetActorBounds(true, Origin, Extent);
@@ -110,6 +112,7 @@ FHitResult UPlayerBaseStateComp::CheckGrounded() const
 	FHitResult HitResult;
 	DoLineTrace(HitResult, Origin + FVector::DownVector * (GroundCheckDistance + SkinWidth));
 
+	bIsGrounded = HitResult.IsValidBlockingHit(); 
 	return HitResult; 
 }
 
@@ -204,9 +207,9 @@ void UPlayerBaseStateComp::PreventCollision()
 		// // sets location to where the player would end up at collision, skin width adjusted 
 		// SetActorLocation(HitResult.Location - HitDirection.GetSafeNormal() * SkinWidth);
 
-		// if grounded TODO: refactor this somehow so it's placed in the grounded state class. the problem is getting the normal in that class 
-		if(UPlayerGroundedState* Grounded = dynamic_cast<UPlayerGroundedState*>(Player->CurrentState))
-			Grounded->ApplyFriction(Normal.Size()); 
+		if(Player->CurrentState == Player->GroundedState)
+			((UPlayerGroundedState*)Player->CurrentState)->ApplyFriction(Normal.Size());
+		
 	}
 }
 
@@ -226,8 +229,4 @@ bool UPlayerBaseStateComp::DoLineTrace(FHitResult& HitResultOut, const FVector& 
 		ECC_Pawn,
 		FCollisionShape::MakeCapsule(Extent), 
 		QueryParams);
-}
-
-UPlayerBaseStateComp::~UPlayerBaseStateComp()
-{
 }

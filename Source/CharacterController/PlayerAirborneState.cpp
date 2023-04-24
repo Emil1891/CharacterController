@@ -5,19 +5,25 @@
 
 #include "PlayerGroundedState.h"
 #include "PlayerPawn3D.h"
+#include "PlayerBaseStateComp.h"
 
 void UPlayerAirborneState::Enter(APlayerPawn3D* PlayerPtr)
 {
-	Super::Enter(PlayerPtr);
+	PlayerPawnState::Enter(PlayerPtr);
+	BaseState = Player->FindComponentByClass<UPlayerBaseStateComp>();
+	BaseState->Enter(PlayerPtr);
+	BaseState->SetUpInput(InputComp);
 
 	// removes input for jump 
-	InputComp->RemoveActionBinding("Jump", IE_Pressed);
+	Player->InputComponent->RemoveActionBinding("Jump", IE_Pressed);
 }
 
 void UPlayerAirborneState::Update(const float DeltaTime)
 {
-	Super::Update(DeltaTime);
+	BaseState->Update(DeltaTime);
 
-	if(bIsGrounded)
+	if(BaseState->bIsGrounded)
 		Player->SwitchState(Player->GroundedState);
+
+	UE_LOG(LogTemp, Warning, TEXT("Airborne"))
 }
