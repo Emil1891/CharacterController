@@ -8,7 +8,7 @@
 #include "PlayerAirborneState.generated.h"
 
 /**
- * 
+ * State for when player is airborne 
  */
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class CHARACTERCONTROLLER_API UPlayerAirborneState : public UActorComponent, public PlayerPawnState

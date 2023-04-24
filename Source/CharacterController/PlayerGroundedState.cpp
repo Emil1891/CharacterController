@@ -1,6 +1,5 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "PlayerGroundedState.h"
 
 #include "PlayerAirborneState.h"
@@ -13,40 +12,27 @@ void UPlayerGroundedState::Enter(APlayerPawn3D* PlayerPtr)
 	
 	BaseState = Player->FindComponentByClass<UPlayerBaseStateComp>();
 	BaseState->Enter(PlayerPtr);
-	BaseState->SetUpInput(InputComp);
 
-	bJump = false;
-	Player->InputComponent->BindAction("Jump", IE_Pressed, this, &UPlayerGroundedState::JumpInput);
+	// binds jump input 
+	Player->InputComponent->BindAction("Jump", IE_Pressed, this, &UPlayerGroundedState::Jump);
 }
 
 void UPlayerGroundedState::Update(const float DeltaTime)
 {
-	// Super::Update(DeltaTime);
 	BaseState->Update(DeltaTime);
-	
-	if(bJump)
-		Jump();
 
+	// becomes airborne without jumping i.e walking off a ledge 
 	if(!BaseState->bIsGrounded)
 		Player->SwitchState(Player->AirborneState);
 		
 	UE_LOG(LogTemp, Warning, TEXT("Grounded"))
 }
 
-void UPlayerGroundedState::JumpInput()
+void UPlayerGroundedState::Jump() 
 {
-	bJump = true; 
-}
-
-void UPlayerGroundedState::Jump()
-{
-	if(BaseState->bIsGrounded)
-	{
-		BaseState->Velocity += FVector::UpVector * JumpDistance;
-		Player->SwitchState(Player->AirborneState);
-	}
-
-	bJump = false; 
+	BaseState->Velocity += FVector::UpVector * JumpDistance;
+	// changes state to airborne 
+	Player->SwitchState(Player->AirborneState);
 }
 
 void UPlayerGroundedState::ApplyFriction(const float NormalMagnitude) const

@@ -11,34 +11,33 @@
 
 void UPlayerBaseStateComp::Enter(APlayerPawn3D* PlayerPtr)
 {
+	// this class should only be set up once 
+	if(bHasBeenSetUp)
+		return;
+	
 	PlayerPawnState::Enter(PlayerPtr);
 
 	Player = Cast<APlayerPawn3D>(UGameplayStatics::GetPlayerPawn(this, 0));
 	CameraComp = Player->FindComponentByClass<UPlayerCamera>();
-
-	if(!bHasSetUpInput) 
-		CameraComp->SetUpCamera();
+	CameraComp->SetUpCamera();
+	
+	SetUpInput();
+	
+	bHasBeenSetUp = true;
 }
 
-void UPlayerBaseStateComp::SetUpInput(UInputComponent* PlayerInputComponent)
+void UPlayerBaseStateComp::SetUpInput()
 {
-	if(bHasSetUpInput)
-		return;
-	
-	PlayerPawnState::SetUpInput(PlayerInputComponent);
-	
 	// walk
-	PlayerInputComponent->BindAxis(
+	Player->InputComponent->BindAxis(
 		"Horizontal", 
 		this, 
 		&UPlayerBaseStateComp::HorizontalInput);
 	
-	PlayerInputComponent->BindAxis(
+	Player->InputComponent->BindAxis(
 		"Vertical", 
 		this, 
 		&UPlayerBaseStateComp::VerticalInput);
-
-	bHasSetUpInput = true;
 }
 
 void UPlayerBaseStateComp::Update(const float DeltaTime)
@@ -130,7 +129,7 @@ void UPlayerBaseStateComp::HorizontalInput(const float AxisValue)
 	// resets input 
 	Input = FVector::Zero();
 
-	// early return if no input so to prevent unnecessary calculations below 
+	// early return if no input to prevent unnecessary calculations below 
 	if(AxisValue == 0)
 		return; 
 	
@@ -151,7 +150,7 @@ void UPlayerBaseStateComp::HorizontalInput(const float AxisValue)
 
 void UPlayerBaseStateComp::VerticalInput(const float AxisValue)
 {
-	// early return if no input so to prevent unnecessary calculations below 
+	// early return if no input to prevent unnecessary calculations below 
 	if(AxisValue == 0)
 		return; 
 	
@@ -207,9 +206,9 @@ void UPlayerBaseStateComp::PreventCollision()
 		// // sets location to where the player would end up at collision, skin width adjusted 
 		// SetActorLocation(HitResult.Location - HitDirection.GetSafeNormal() * SkinWidth);
 
+		// apply friction needs the normal from each loop, optimally apply friction would be called in the grounded state class
 		if(Player->CurrentState == Player->GroundedState)
-			((UPlayerGroundedState*)Player->CurrentState)->ApplyFriction(Normal.Size());
-		
+			static_cast<UPlayerGroundedState*>(Player->CurrentState)->ApplyFriction(Normal.Size());
 	}
 }
 

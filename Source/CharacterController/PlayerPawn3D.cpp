@@ -37,14 +37,6 @@ void APlayerPawn3D::Tick(const float DeltaTime)
 	CurrentState->Update(DeltaTime);
 }
 
-// Called to bind functionality to input
-void APlayerPawn3D::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
-	CurrentState->SetUpInput(PlayerInputComponent);
-}
-
 void APlayerPawn3D::SwitchState(PlayerPawnState* NewState)
 {
 	CurrentState->Exit();

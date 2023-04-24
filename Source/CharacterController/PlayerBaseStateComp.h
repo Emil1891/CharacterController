@@ -8,7 +8,7 @@
 #include "PlayerBaseStateComp.generated.h"
 
 /**
- * This state holds all functionality that is shared between all substates 
+ * This state holds all functionality that is shared between all other states  
  */
 
 class APlayerPawn3D; 
@@ -22,9 +22,10 @@ public:
 	UPlayerBaseStateComp() = default;
 
 	virtual void Enter(APlayerPawn3D* PlayerPtr = nullptr) override;
-	virtual void SetUpInput(UInputComponent* PlayerInputComponent) override; 
 	virtual void Update(const float DeltaTime) override;
 	virtual void Exit() override {};
+
+	void SetUpInput(); 
 	
 	void HorizontalInput(const float AxisValue);
 	void VerticalInput(const float AxisValue);
@@ -66,7 +67,7 @@ private:
 	
 	FVector Input = FVector::Zero();
 
-	bool bHasSetUpInput = false;
+	bool bHasBeenSetUp = false;
 
 	// functions
 	void PreventCollision();

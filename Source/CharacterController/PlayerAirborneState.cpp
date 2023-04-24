@@ -1,6 +1,5 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "PlayerAirborneState.h"
 
 #include "PlayerGroundedState.h"
@@ -12,7 +11,6 @@ void UPlayerAirborneState::Enter(APlayerPawn3D* PlayerPtr)
 	PlayerPawnState::Enter(PlayerPtr);
 	BaseState = Player->FindComponentByClass<UPlayerBaseStateComp>();
 	BaseState->Enter(PlayerPtr);
-	BaseState->SetUpInput(InputComp);
 
 	// removes input for jump 
 	Player->InputComponent->RemoveActionBinding("Jump", IE_Pressed);

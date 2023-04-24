@@ -8,7 +8,7 @@
 #include "PlayerGroundedState.generated.h"
 
 /**
- * 
+ * State for when player is grounded 
  */
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -20,9 +20,9 @@ public:
 	virtual void Enter(APlayerPawn3D* PlayerPtr) override;
 	virtual void Update(const float DeltaTime) override;
 	
-	void JumpInput();
-	
 	void ApplyFriction(const float NormalMagnitude) const;
+	
+	void Jump();
 	
 private:
 	UPROPERTY(EditAnywhere)
@@ -34,9 +34,5 @@ private:
 	UPROPERTY(EditAnywhere, meta=(ClampMin = 0.f, ClampMax = 1.f, UIMin = 0.f, UIMax = 1.f))
 	float KineticFrictionCoefficient = 0.3f;
 
-	bool bJump = false;
-
 	class UPlayerBaseStateComp* BaseState;
-
-	void Jump();
 };

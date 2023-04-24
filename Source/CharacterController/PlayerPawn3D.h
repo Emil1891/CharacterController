@@ -8,6 +8,10 @@
 
 class PlayerPawnState;
 
+/**
+ * This class has basically been turned into a state machine 
+ */
+
 UCLASS()
 class CHARACTERCONTROLLER_API APlayerPawn3D : public APawn
 {
@@ -24,9 +28,6 @@ protected:
 public:	
 	// Called every frame
 	virtual void Tick(const float DeltaTime) override;
-
-	// Called to bind functionality to input
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	
 	void SwitchState(PlayerPawnState* NewState); 
 
