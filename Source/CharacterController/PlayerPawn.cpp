@@ -1,5 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
+// This class is for 2D movement and was expanded upon for the 3D controller which is more developed/better. 
+
 #include "PlayerPawn.h"
 
 #include "PhysicsHelper.h"
